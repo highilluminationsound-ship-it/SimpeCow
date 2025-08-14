@@ -1,1 +1,1 @@
-# SimpeCow
+# SimpeCT
