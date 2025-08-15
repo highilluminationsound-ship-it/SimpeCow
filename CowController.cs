@@ -50,6 +50,7 @@ public class CowController : MonoBehaviour
         Dead
     }
 
+    public bool animate;
     [Header("Параметры коровы")]
     public float moveSpeed = 1.5f;
     public float runSpeed = 5f;
@@ -93,7 +94,7 @@ public class CowController : MonoBehaviour
         SelectNewWaypoint();
     }
 
-    void Update()
+    void FixedUpdate()
     {
         // Если корова мертва, прекращаем обработку
         if (currentState == CowState.Dead) return;
@@ -132,7 +133,7 @@ public class CowController : MonoBehaviour
         switch (currentState)
         {
             case CowState.Idle:
-                rb.velocity = Vector3.zero; // Останавливаем движение
+                rb.linearVelocity = Vector3.zero; // Останавливаем движение
                 stateTimer = Random.Range(idleTimeRange.x, idleTimeRange.y);
                 break;
             case CowState.Walking:
@@ -140,7 +141,7 @@ public class CowController : MonoBehaviour
                 SelectNewWaypoint();
                 break;
             case CowState.Eating:
-                rb.velocity = Vector3.zero;
+                rb.linearVelocity = Vector3.zero;
                 animator.SetBool("IsEating", true);
                 stateTimer = eatDuration;
                 break;
@@ -221,22 +222,35 @@ public class CowController : MonoBehaviour
             SwitchState(CowState.Idle);
         }
     }
-
+    public LayerMask obstacleMask = ~0;
     private void MoveAndRotate(Vector3 targetPosition, float speed)
     {
         Vector3 direction = (targetPosition - transform.position).normalized;
 
+        
+        bool hit = Physics.Raycast(transform.position, transform.forward, out RaycastHit hitInfo, 4, obstacleMask, QueryTriggerInteraction.Ignore);
+        Debug.DrawRay(transform.position, transform.forward * 4, hit ? Color.red : Color.green);
+        Quaternion wall = hit ? Quaternion.AngleAxis(75f, Vector3.up) : Quaternion.identity;
         // Поворот
-        if (direction != Vector3.zero)
-        {
             Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
-        }
+           // transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 0.55f);
+           // transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 1.155f);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation * wall,  Time.deltaTime * 300f); 
+         //   transform.rotation = targetRotation;
+        
 
         // Движение через Rigidbody
-        rb.velocity = new Vector3(direction.x * speed, rb.velocity.y, direction.z * speed);
+        //rb.linearVelocity = new Vector3(direction.x * speed, rb.linearVelocity.y, direction.z * speed);
+        if (stopped == false)
+        {
+            transform.position += transform.forward * speed2 * Time.deltaTime;
+        }
+        
     }
 
+    public float speed2 = 1;
+    public bool stopped = false;
+    
     /// <summary>
     /// Выбирает новую случайную точку из массива waypoints.
     /// </summary>
